@@ -21,7 +21,7 @@ const rebuildRules = (typeof chrome !== "undefined" && chrome.runtime && chrome.
   }
   : undefined;
 
-var ollama_host = localStorage.getItem("host-address") || 'http://192.168.100.5:13960'; // Concise initialization
+var ollama_host = localStorage.getItem("host-address") || 'http://localhost:11434'; // Concise initialization
 const ollamaHostElement = document.getElementById("host-address");
 ollamaHostElement.value = ollama_host; // Set value directly
 
