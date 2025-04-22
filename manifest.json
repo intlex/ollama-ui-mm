@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "ollama-ui",
+  "name": "ollama-ui-mm",
   "description": "This extension hosts an ollama-ui web server on localhost",
   "version": "1.6",
   "action": {},
@@ -9,9 +9,9 @@
   ],
   "host_permissions": [
     "http://*:11434/api/tags",
-    "http://*:11434/api/generate",
+    "http://*:11434/api/chat",
     "https://*:11434/api/tags",
-    "https://*:11434/api/generate"
+    "https://*:11434/api/chat"
   ],
   "background": {
     "service_worker": "background.js"
