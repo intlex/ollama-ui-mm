@@ -1,12 +1,9 @@
-var rebuildRules = undefined;
-if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id) {
-    rebuildRules = async function (domain) {
-    const domains = [domain];
-    /** @type {chrome.declarativeNetRequest.Rule[]} */
+const rebuildRules = (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id)
+  ? async (domain) => {
     const rules = [{
       id: 1,
       condition: {
-        requestDomains: domains
+        requestDomains: [domain], // Simplified array creation
       },
       action: {
         type: 'modifyHeaders',
@@ -18,56 +15,42 @@ if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id) {
       },
     }];
     await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: rules.map(r => r.id),
+      removeRuleIds: [1], // Hardcoded ID since it's always 1
       addRules: rules,
     });
   }
-}
+  : undefined;
 
+var ollama_host = localStorage.getItem("host-address") || 'http://192.168.100.5:13960'; // Concise initialization
+const ollamaHostElement = document.getElementById("host-address");
+ollamaHostElement.value = ollama_host; // Set value directly
 
-var ollama_host = localStorage.getItem("host-address");
-if (!ollama_host){
-  ollama_host = 'http://localhost:11434'
-} else {
-  document.getElementById("host-address").value = ollama_host;
-}
+var ollama_system_prompt = localStorage.getItem("system-prompt");
+const ollamaSystemPromptElement = document.getElementById("system-prompt");
+ollamaSystemPromptElement.value = ollama_system_prompt || ""; // Handle potential null value
 
-const ollama_system_prompt = localStorage.getItem("system-prompt");
-if (ollama_system_prompt){
-  document.getElementById("system-prompt").value = ollama_system_prompt;
-}
+if (rebuildRules) rebuildRules(ollama_host);
 
-if (rebuildRules){
-  rebuildRules(ollama_host);
-}
-
-function setHostAddress(){
-  ollama_host = document.getElementById("host-address").value;
+function setHostAddress() {
+  ollama_host = ollamaHostElement.value;
   localStorage.setItem("host-address", ollama_host);
-  populateModels();
-  if (rebuildRules){
-    rebuildRules(ollama_host);
-  }
+  populateModels(); // Assuming this function exists
+  if (rebuildRules) rebuildRules(ollama_host);
 }
 
-function setSystemPrompt(){
-  const systemPrompt = document.getElementById("system-prompt").value;
-  localStorage.setItem("system-prompt", systemPrompt);
+function setSystemPrompt() {
+  ollama_system_prompt = ollamaSystemPromptElement.value;
+  localStorage.setItem("system-prompt", ollama_system_prompt);
 }
 
-
-
-async function getModels(){
+async function getModels() {
   const response = await fetch(`${ollama_host}/api/tags`);
-  const data = await response.json();
-  return data;
+  return await response.json();
 }
 
-
-// Function to send a POST request to the API
 function postRequest(data, signal) {
-  const URL = `${ollama_host}/api/generate`;
-  return fetch(URL, {
+  // generate
+  return fetch(`${ollama_host}/api/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -77,31 +60,29 @@ function postRequest(data, signal) {
   });
 }
 
-// Function to stream the response from the server
 async function getResponse(response, callback) {
   const reader = response.body.getReader();
   let partialLine = '';
-
   while (true) {
     const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-    // Decode the received value and split by lines
+    if (done) break;
     const textChunk = new TextDecoder().decode(value);
     const lines = (partialLine + textChunk).split('\n');
-    partialLine = lines.pop(); // The last line might be incomplete
-
+    partialLine = lines.pop();
     for (const line of lines) {
       if (line.trim() === '') continue;
-      const parsedResponse = JSON.parse(line);
-      callback(parsedResponse); // Process each response word
+      try {
+        callback(JSON.parse(line));
+      } catch (error) {
+        console.error("Error parsing JSON:", line, error);
+      }
     }
   }
-
-  // Handle any remaining line
   if (partialLine.trim() !== '') {
-    const parsedResponse = JSON.parse(partialLine);
-    callback(parsedResponse);
+    try {
+      callback(JSON.parse(partialLine));
+    } catch (error) {
+      console.error("Error parsing last JSON chunk:", partialLine, error);
+    }
   }
 }
