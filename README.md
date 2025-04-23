@@ -9,6 +9,7 @@ Forked from https://github.com/ollama-ui/ollama-ui
 * Support for multimodal models.
 * Support for inserting images from the device and directly from the clipboard.
 * Automatic recognition and formatting of the clipboard content when inserted into the request input field.
+* The code is slightly optimized and cleaned.
 
 ## Notice
 
